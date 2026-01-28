@@ -51,6 +51,11 @@ static int LanguageNameToEnum(const char* langName) {
  * Public API Implementation
  * ============================================================================ */
 
+/* Forward declarations for local helpers defined later in this file.
+ * (C11 disallows implicit function declarations.)
+ */
+static void ApplyWordsSettings(const ConfigSnapshot* snapshot);
+
 void ApplyGeneralSettings(const ConfigSnapshot* snapshot) {
     if (!snapshot) return;
     

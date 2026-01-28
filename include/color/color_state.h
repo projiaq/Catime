@@ -20,7 +20,10 @@
  * @brief User's saved color palette entry
  */
 typedef struct {
-    const char* hexColor;
+    /* Owned string allocated by the palette loader/parser.
+     * Stored as mutable so it can be freed during palette reload.
+     */
+    char* hexColor;
 } PredefinedColor;
 
 /* ============================================================================
