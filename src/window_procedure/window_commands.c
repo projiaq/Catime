@@ -472,7 +472,7 @@ typedef struct {
  * Words (built-in)
  * ============================================================================ */
 
-static BOOL CmdWordsToggle(HWND hwnd, WPARAM wp, LPARAM lp) {
+static LRESULT CmdWordsToggle(HWND hwnd, WPARAM wp, LPARAM lp) {
     (void)wp; (void)lp;
     WORD_DISPLAY_ENABLED = !WORD_DISPLAY_ENABLED;
     if (WORD_DISPLAY_ENABLED) {
@@ -482,15 +482,15 @@ static BOOL CmdWordsToggle(HWND hwnd, WPARAM wp, LPARAM lp) {
     GetConfigPath(config_path, MAX_PATH);
     WriteConfig(config_path);
     InvalidateRect(hwnd, NULL, TRUE);
-    return TRUE;
+    return 0;
 }
 
-static BOOL CmdWordsNext(HWND hwnd, WPARAM wp, LPARAM lp) {
+static LRESULT CmdWordsNext(HWND hwnd, WPARAM wp, LPARAM lp) {
     (void)wp; (void)lp;
     if (WordsDisplay_Next()) {
         InvalidateRect(hwnd, NULL, TRUE);
     }
-    return TRUE;
+    return 0;
 }
 
 static void SetWordsInterval(HWND hwnd, int sec) {
@@ -502,7 +502,7 @@ static void SetWordsInterval(HWND hwnd, int sec) {
     InvalidateRect(hwnd, NULL, TRUE);
 }
 
-static BOOL CmdWordsInterval(HWND hwnd, WPARAM wp, LPARAM lp) {
+static LRESULT CmdWordsInterval(HWND hwnd, WPARAM wp, LPARAM lp) {
     (void)lp;
     switch (LOWORD(wp)) {
         case CLOCK_IDM_WORDS_INTERVAL_OFF:  SetWordsInterval(hwnd, 0); break;
@@ -513,60 +513,60 @@ static BOOL CmdWordsInterval(HWND hwnd, WPARAM wp, LPARAM lp) {
         case CLOCK_IDM_WORDS_INTERVAL_60S:  SetWordsInterval(hwnd, 60); break;
         case CLOCK_IDM_WORDS_INTERVAL_120S: SetWordsInterval(hwnd, 120); break;
         case CLOCK_IDM_WORDS_INTERVAL_300S: SetWordsInterval(hwnd, 300); break;
-        default: return FALSE;
+        default: return 0;
     }
-    return TRUE;
+    return 0;
 }
 
-static BOOL CmdWordsShowPhonetic(HWND hwnd, WPARAM wp, LPARAM lp) {
+static LRESULT CmdWordsShowPhonetic(HWND hwnd, WPARAM wp, LPARAM lp) {
     (void)wp; (void)lp;
     WORD_SHOW_PHONETIC = !WORD_SHOW_PHONETIC;
     char config_path[MAX_PATH];
     GetConfigPath(config_path, MAX_PATH);
     WriteConfig(config_path);
     InvalidateRect(hwnd, NULL, TRUE);
-    return TRUE;
+    return 0;
 }
 
-static BOOL CmdWordsPhoneticMode(HWND hwnd, WPARAM wp, LPARAM lp) {
+static LRESULT CmdWordsPhoneticMode(HWND hwnd, WPARAM wp, LPARAM lp) {
     (void)lp;
     switch (LOWORD(wp)) {
         case CLOCK_IDM_WORDS_PHONETIC_UK: WORD_PHONETIC_MODE = 0; break;
         case CLOCK_IDM_WORDS_PHONETIC_US: WORD_PHONETIC_MODE = 1; break;
         case CLOCK_IDM_WORDS_PHONETIC_BOTH: WORD_PHONETIC_MODE = 2; break;
-        default: return FALSE;
+        default: return 0;
     }
     char config_path[MAX_PATH];
     GetConfigPath(config_path, MAX_PATH);
     WriteConfig(config_path);
     InvalidateRect(hwnd, NULL, TRUE);
-    return TRUE;
+    return 0;
 }
 
-static BOOL CmdWordsShowChinese(HWND hwnd, WPARAM wp, LPARAM lp) {
+static LRESULT CmdWordsShowChinese(HWND hwnd, WPARAM wp, LPARAM lp) {
     (void)wp; (void)lp;
     WORD_SHOW_CHINESE = !WORD_SHOW_CHINESE;
     char config_path[MAX_PATH];
     GetConfigPath(config_path, MAX_PATH);
     WriteConfig(config_path);
     InvalidateRect(hwnd, NULL, TRUE);
-    return TRUE;
+    return 0;
 }
 
-static BOOL CmdWordsChineseLen(HWND hwnd, WPARAM wp, LPARAM lp) {
+static LRESULT CmdWordsChineseLen(HWND hwnd, WPARAM wp, LPARAM lp) {
     (void)lp;
     switch (LOWORD(wp)) {
         case CLOCK_IDM_WORDS_CN_LEN_0:  WORD_CHINESE_MAX_LEN = 0; break;
         case CLOCK_IDM_WORDS_CN_LEN_6:  WORD_CHINESE_MAX_LEN = 6; break;
         case CLOCK_IDM_WORDS_CN_LEN_10: WORD_CHINESE_MAX_LEN = 10; break;
         case CLOCK_IDM_WORDS_CN_LEN_16: WORD_CHINESE_MAX_LEN = 16; break;
-        default: return FALSE;
+        default: return 0;
     }
     char config_path[MAX_PATH];
     GetConfigPath(config_path, MAX_PATH);
     WriteConfig(config_path);
     InvalidateRect(hwnd, NULL, TRUE);
-    return TRUE;
+    return 0;
 }
 
 static const CommandDispatchEntry COMMAND_DISPATCH_TABLE[] = {
