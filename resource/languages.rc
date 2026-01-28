@@ -1,0 +1,19 @@
+/**
+ * @file languages.rc
+ * @brief Internationalization resource definitions for multi-language support
+ */
+#include <windows.h>
+#include "resource.h"
+
+
+/** @brief Embedded language pack resources for runtime loading */
+LANG_EN_INI RCDATA "languages/en.ini"
+LANG_ZH_CN_INI RCDATA "languages/zh_CN.ini"
+LANG_ZH_TW_INI RCDATA "languages/zh-Hant.ini"
+LANG_ES_INI RCDATA "languages/es.ini"
+LANG_FR_INI RCDATA "languages/fr.ini"
+LANG_DE_INI RCDATA "languages/de.ini"
+LANG_RU_INI RCDATA "languages/ru.ini"
+LANG_PT_INI RCDATA "languages/pt.ini"
+LANG_JA_INI RCDATA "languages/ja.ini"
+LANG_KO_INI RCDATA "languages/ko.ini" 

@@ -1,0 +1,42 @@
+/**
+ * @file catime.rc
+ * @brief Application version information resource
+ */
+#include <windows.h>
+#include "../resource/resource.h"
+
+/** @brief Windows version resource block with build metadata */
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION     CATIME_VERSION_MAJOR,CATIME_VERSION_MINOR,CATIME_VERSION_PATCH,CATIME_VERSION_BUILD
+PRODUCTVERSION  CATIME_VERSION_MAJOR,CATIME_VERSION_MINOR,CATIME_VERSION_PATCH,CATIME_VERSION_BUILD
+FILEFLAGSMASK   0x3fL
+#ifdef _DEBUG
+FILEFLAGS       0x1L
+#else
+FILEFLAGS       0x0L
+#endif
+FILEOS          0x40004L
+FILETYPE        0x1L
+FILESUBTYPE     0x0L
+BEGIN
+    /** String metadata block for file properties dialog */
+    BLOCK "StringFileInfo"
+    BEGIN
+        /** Neutral language block (0000) with Unicode codepage (04b0) */
+        BLOCK "000004b0"
+        BEGIN
+            VALUE "CompanyName",      "vladelaina"
+            VALUE "FileDescription",  "Catime"
+            VALUE "FileVersion",      CATIME_VERSION
+            VALUE "InternalName",     "Catime"
+            VALUE "LegalCopyright",   "Copyright (C) 2025-2026 vladelaina. Apache License 2.0"
+            VALUE "OriginalFilename", "Catime.exe"
+            VALUE "ProductName",      "Catime"
+            VALUE "ProductVersion",   CATIME_VERSION
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0000, 1200
+    END
+END 

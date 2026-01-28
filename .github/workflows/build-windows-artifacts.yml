@@ -1,0 +1,55 @@
+name: Build Windows (Words-enabled)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: mingw64-x64
+            msystem: MINGW64
+            mingw_arch: x86_64
+            artifact: catime_words_x64
+          - name: mingw32-x86
+            msystem: MINGW32
+            mingw_arch: i686
+            artifact: catime_words_x86
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup MSYS2
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msystem }}
+          update: true
+          install: >-
+            mingw-w64-${{ matrix.mingw_arch }}-gcc
+            mingw-w64-${{ matrix.mingw_arch }}-cmake
+            mingw-w64-${{ matrix.mingw_arch }}-ninja
+
+      - name: Configure
+        shell: msys2 {0}
+        run: |
+          cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        shell: msys2 {0}
+        run: |
+          cmake --build build --config Release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: |
+            build/catime.exe
+            build/*.dll

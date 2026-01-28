@@ -1,0 +1,133 @@
+name: SignPath Code Signing
+
+on:
+  workflow_call:
+    inputs:
+      artifact-name:
+        description: 'GitHub artifact name to sign'
+        required: true
+        type: string
+      artifact-id:
+        description: 'GitHub artifact ID to sign'
+        required: true
+        type: string
+      version:
+        description: 'Version string for signing'
+        required: true
+        type: string
+      is-release:
+        description: 'Whether this is a release build'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      SIGNPATH_API_TOKEN:
+        description: 'SignPath API Token'
+        required: true
+    outputs:
+      signed-artifact-id:
+        description: 'ID of the signed artifact'
+        value: ${{ jobs.code-signing.outputs.signed-artifact-id }}
+      signing-request-id:
+        description: 'SignPath signing request ID'
+        value: ${{ jobs.code-signing.outputs.signing-request-id }}
+
+jobs:
+  code-signing:
+    runs-on: ubuntu-latest
+    outputs:
+      signed-artifact-id: ${{ steps.upload-signed.outputs.artifact-id }}
+      signing-request-id: ${{ steps.signpath-submit.outputs.signing-request-id }}
+    
+    steps:
+    - name: Download unsigned artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ./unsigned-artifacts
+        
+    - name: Display artifact contents
+      run: |
+        echo "Contents of unsigned artifacts:"
+        find ./unsigned-artifacts -name "*.exe" -exec ls -la {} \;
+        
+    - name: Create signing directory
+      run: |
+        mkdir -p ./signing-input
+        mkdir -p ./signed-output
+        
+        # Copy all .exe files to signing directory
+        find ./unsigned-artifacts -name "*.exe" -exec cp {} ./signing-input/ \;
+        
+        echo "Files to be signed:"
+        ls -la ./signing-input/
+        
+        # Check if there are files to be signed
+        FILE_COUNT=$(find ./signing-input -name "*.exe" | wc -l)
+        if [ "$FILE_COUNT" -eq 0 ]; then
+          echo "Warning: No .exe files found for signing!"
+          exit 1
+        fi
+        
+    - name: Prepare file for signing
+      run: |
+        echo "Files ready for signing (keeping original names):"
+        ls -la ./signing-input/
+        
+    - name: Upload signing package as artifact (temporary)
+      id: upload-signing-package
+      uses: actions/upload-artifact@v4
+      with:
+        name: catime-signing-package
+        path: ./signing-input/*.exe
+        retention-days: 1  # Temporary file, can be deleted after signing
+        
+    - name: Submit to SignPath for signing
+      id: signpath-submit
+      uses: signpath/github-action-submit-signing-request@v1
+      with:
+        api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+        organization-id: '66aa6e96-a394-43f9-b3c3-65214fcd285d'
+        project-slug: 'Catime'
+        signing-policy-slug: ${{ inputs.is-release && 'release-signing' || 'test-signing' }}  # Use conditional signing policy
+        github-artifact-id: ${{ steps.upload-signing-package.outputs.artifact-id }}
+        wait-for-completion: true
+        output-artifact-directory: './signed-output'
+        parameters: |
+          version: ${{ toJSON(inputs.version) }}
+          build_type: ${{ toJSON(inputs.is-release && 'release' || 'development') }}
+          
+    - name: Extract signed files
+      run: |
+        echo "Signed output directory contents:"
+        find ./signed-output -type f -exec ls -la {} \;
+        
+        # If signed output is a ZIP file, extract it
+        if find ./signed-output -name "*.zip" | grep -q .; then
+          echo "Extracting ZIP file..."
+          cd ./signed-output
+          find . -name "*.zip" -exec unzip -o {} \;
+          cd ..
+        fi
+        
+        echo "Signed .exe files:"
+        find ./signed-output -name "*.exe" -exec ls -la {} \;
+        
+    - name: Verify signed files exist
+      run: |
+        SIGNED_FILES=$(find ./signed-output -name "*.exe" | wc -l)
+        if [ "$SIGNED_FILES" -eq 0 ]; then
+          echo "Error: No signed .exe files found!"
+          exit 1
+        fi
+        echo "Found $SIGNED_FILES signed executable files"
+        
+    - name: Upload signed artifacts
+      id: upload-signed
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ inputs.artifact-name }}
+        path: ./signed-output/*.exe
+        retention-days: 90
+        overwrite: true
+        

@@ -1,0 +1,200 @@
+/**
+ * @file tray_events.c
+ * @brief System tray event handlers and timer control
+ */
+#include <windows.h>
+#include <shellapi.h>
+#include "tray/tray_events.h"
+#include "tray/tray_menu.h"
+#include "tray/tray.h"
+#include "color/color.h"
+#include "timer/timer.h"
+#include "language.h"
+#include "window_procedure/window_events.h"
+#include "timer/timer_events.h"
+#include "drawing.h"
+#include "audio_player.h"
+#include "config.h"
+#include "../resource/resource.h"
+
+/* Timer for detecting mouse hover over tray icon */
+#define TRAY_HOVER_CHECK_TIMER_ID 42422
+#define TRAY_HOVER_CHECK_INTERVAL_MS 100
+
+static UINT_PTR g_hoverCheckTimer = 0;
+static HWND g_trayEventHwnd = NULL;
+
+/**
+ * @brief Timer callback to check if mouse is over tray icon
+ * @note Installs hook when mouse enters, uninstalls when mouse leaves
+ */
+static void CALLBACK TrayHoverCheckTimerProc(HWND hwnd, UINT msg, UINT_PTR id, DWORD time) {
+    (void)hwnd; (void)msg; (void)id; (void)time;
+    
+    POINT pt;
+    GetCursorPos(&pt);
+    
+    BOOL isOverIcon = IsMouseOverTrayIconArea(pt);
+    BOOL hookInstalled = IsTrayMouseHookInstalled();
+    
+    if (isOverIcon && !hookInstalled) {
+        /* Mouse entered tray icon - install hook */
+        InstallTrayMouseHook();
+    } else if (!isOverIcon && hookInstalled) {
+        /* Mouse left tray icon - uninstall hook */
+        UninstallTrayMouseHook();
+    }
+}
+
+/**
+ * @brief Start tray hover detection timer
+ */
+static void StartTrayHoverDetection(HWND hwnd) {
+    if (!g_hoverCheckTimer) {
+        g_trayEventHwnd = hwnd;
+        g_hoverCheckTimer = SetTimer(hwnd, TRAY_HOVER_CHECK_TIMER_ID, 
+                                     TRAY_HOVER_CHECK_INTERVAL_MS, TrayHoverCheckTimerProc);
+    }
+}
+
+/**
+ * @brief Stop tray hover detection timer
+ * @note Called when tray icon is removed
+ */
+void StopTrayHoverDetection(void) {
+    if (g_hoverCheckTimer && g_trayEventHwnd) {
+        KillTimer(g_trayEventHwnd, TRAY_HOVER_CHECK_TIMER_ID);
+        g_hoverCheckTimer = 0;
+    }
+    /* Also uninstall hook if still active */
+    if (IsTrayMouseHookInstalled()) {
+        UninstallTrayMouseHook();
+    }
+}
+
+/**
+ * @brief Open URL in default browser
+ * @param url Wide-character URL string
+ */
+static inline void OpenUrlInBrowser(const wchar_t* url) {
+    if (!url) return;
+    ShellExecuteW(NULL, L"open", url, NULL, NULL, SW_SHOWNORMAL);
+}
+
+/**
+ * @brief Invalidate window to trigger redraw
+ * @param hwnd Window handle
+ */
+static inline void ForceWindowRedraw(HWND hwnd) {
+    InvalidateRect(hwnd, NULL, TRUE);
+}
+
+/**
+ * @brief Restart timer with new interval
+ * @param hwnd Window handle
+ * @param timerId Timer identifier
+ * @param interval Interval in milliseconds
+ */
+static inline void RestartTimerWithInterval(HWND hwnd, UINT timerId, UINT interval) {
+    KillTimer(hwnd, timerId);
+    SetTimer(hwnd, timerId, interval, NULL);
+}
+
+/**
+ * @brief Check if timer is active (countdown or count-up)
+ * @return TRUE if timer is running (not clock display mode)
+ */
+static inline BOOL IsTimerActive(void) {
+    return !CLOCK_SHOW_CURRENT_TIME && (CLOCK_COUNT_UP || CLOCK_TOTAL_TIME > 0);
+}
+
+/**
+ * @brief Handle tray icon mouse events
+ * @param hwnd Main window handle
+ * @param uID Tray icon identifier
+ * @param uMouseMsg Mouse message (WM_LBUTTONUP, WM_RBUTTONUP, WM_MOUSEMOVE, etc.)
+ * @note Right-click: color menu; Left-click: main context menu
+ * @note Hover detection is done via timer polling, not message-based
+ */
+void HandleTrayIconMessage(HWND hwnd, UINT uID, UINT uMouseMsg) {
+    (void)uID;
+
+    /* Start hover detection timer on first tray message */
+    StartTrayHoverDetection(hwnd);
+
+    switch (uMouseMsg) {
+        case WM_RBUTTONUP:
+            SetCursor(LoadCursorW(NULL, MAKEINTRESOURCEW(IDC_ARROW)));
+            ShowColorMenu(hwnd);
+            break;
+            
+        case WM_LBUTTONUP:
+            SetCursor(LoadCursorW(NULL, MAKEINTRESOURCEW(IDC_ARROW)));
+            ShowContextMenu(hwnd);
+            break;
+            
+        default:
+            break;
+    }
+}
+
+/**
+ * @brief Toggle timer pause/resume state
+ * @param hwnd Main window handle for timer operations
+ * @note Preserves milliseconds and manages notification sound state
+ */
+void TogglePauseResumeTimer(HWND hwnd) {
+    if (!IsTimerActive()) {
+        return;
+    }
+    
+    /* Use TogglePauseTimer() to properly handle g_target_end_time and g_pause_start_time */
+    TogglePauseTimer();
+    
+    if (CLOCK_IS_PAUSED) {
+        CLOCK_LAST_TIME_UPDATE = time(NULL);
+        KillTimer(hwnd, 1);
+        PauseNotificationSound();
+    } else {
+        RestartTimerWithInterval(hwnd, 1, GetTimerInterval());
+        ResumeNotificationSound();
+    }
+    
+    ForceWindowRedraw(hwnd);
+}
+
+/**
+ * @brief Persist startup mode and refresh UI
+ * @param hwnd Window handle for redraw
+ * @param mode Startup mode ("COUNTDOWN", "COUNTUP", "SHOW_TIME", "NO_DISPLAY")
+ */
+void SetStartupMode(HWND hwnd, const char* mode) {
+    WriteConfigStartupMode(mode);
+    
+    HMENU hMenu = GetMenu(hwnd);
+    if (hMenu) {
+        ForceWindowRedraw(hwnd);
+    }
+}
+
+/** @brief Open user guide in browser */
+void OpenUserGuide(void) {
+    OpenUrlInBrowser(L"https://vladelaina.github.io/Catime/guide");
+}
+
+/** @brief Open support page in browser */
+void OpenSupportPage(void) {
+    OpenUrlInBrowser(L"https://vladelaina.github.io/Catime/support");
+}
+
+/**
+ * @brief Open feedback page (language-aware)
+ * @note Chinese users → localized form; others → GitHub Issues
+ */
+void OpenFeedbackPage(void) {
+    const wchar_t* url = (CURRENT_LANGUAGE == APP_LANG_CHINESE_SIMP) 
+        ? URL_FEEDBACK 
+        : L"https://github.com/vladelaina/Catime/issues";
+    
+    OpenUrlInBrowser(url);
+}

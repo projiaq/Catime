@@ -1,0 +1,21 @@
+/**
+ * @file color_dialog.rc
+ * @brief Color customization dialog supporting multiple formats
+ */
+#include <windows.h>
+#include "resource.h"
+
+#pragma code_page(65001)
+
+/** @brief Color selection dialog with format documentation */
+CLOCK_IDD_COLOR_DIALOG DIALOGEX 0, 0, 200, 175
+STYLE DS_MODALFRAME | DS_CENTER | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Set Color Value"
+FONT 9, "Segoe UI"
+BEGIN
+    /** Instructional text showing supported color input formats - will be localized */
+    LTEXT           "Supported formats:", IDC_COLOR_FORMAT_HELP, 10, 10, 180, 95
+    /** Color value input field accepting multiple formats */
+    EDITTEXT        CLOCK_IDC_EDIT, 10, 110, 180, 20, ES_AUTOHSCROLL | ES_MULTILINE
+    PUSHBUTTON      "OK", CLOCK_IDC_BUTTON_OK, 140, 140, 50, 14
+END 

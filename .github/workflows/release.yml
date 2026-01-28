@@ -1,0 +1,126 @@
+name: Release Catime
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+# Add permissions configuration
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+      tag_version: ${{ steps.get_version.outputs.tag_version }}
+      artifact-id: ${{ steps.upload-unsigned.outputs.artifact-id }}
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Set up China timezone
+      run: |
+        sudo timedatectl set-timezone Asia/Shanghai
+        echo "Current timezone: $(date +%Z)"
+        echo "Current time: $(date)"
+        
+    - name: Install MinGW compiler and CMake
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y mingw-w64 cmake
+        cmake --version
+        
+    - name: Extract version number
+      id: get_version
+      run: |
+        VERSION=$(grep -oP '#define CATIME_VERSION "\K[^"]+' resource/resource.h)
+        echo "VERSION=$VERSION" >> $GITHUB_ENV
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "Version: $VERSION"
+        # Get tag name without 'v' prefix
+        TAG_VERSION=${GITHUB_REF#refs/tags/v}
+        echo "TAG_VERSION=$TAG_VERSION" >> $GITHUB_ENV
+        echo "tag_version=$TAG_VERSION" >> $GITHUB_OUTPUT
+      
+    - name: Build application
+      run: |
+        # Make build script executable
+        chmod +x build.sh
+        
+        # Build using the same script as local development
+        ./build.sh Release
+        
+        # Copy and rename the executable from build directory
+        mkdir -p output
+        cp build/catime.exe ./output/catime_${{ env.TAG_VERSION }}.exe
+        echo "Build completed using build.sh script"
+        
+    - name: Upload unsigned release artifact
+      id: upload-unsigned
+      uses: actions/upload-artifact@v4
+      with:
+        name: catime-release-${{ env.TAG_VERSION }}
+        path: output/catime_${{ env.TAG_VERSION }}.exe
+        retention-days: 1
+
+  # Code signing job
+  sign:
+    needs: build
+    uses: ./.github/workflows/signpath-sign.yml
+    with:
+      artifact-name: catime-release-${{ needs.build.outputs.tag_version }}
+      artifact-id: ${{ needs.build.outputs.artifact-id }}
+      version: ${{ needs.build.outputs.tag_version }}
+      is-release: true
+    secrets:
+      SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+
+  # Release job
+  release:
+    needs: [build, sign]
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Download signed artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: catime-release-${{ needs.build.outputs.tag_version }}
+        path: ./signed-release
+        
+    - name: Create GitHub Release
+      id: create_release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ./signed-release/catime_${{ needs.build.outputs.tag_version }}.exe
+        name: ${{ github.ref_name }}
+        body: |
+          # 📝 Changelog
+
+          > [!TIP]
+          > My friend, while downloading Catime, why not check out my friend's [Easy-Cat-Timer](https://github.com/xujiangjiang/Easy-Cat-Timer)— a super cute and practical countdown timer!
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Update Winget Package
+      uses: vedantmgoyal2009/winget-releaser@v2
+      with:
+        identifier: VladElaina.Catime
+        version: ${{ needs.build.outputs.tag_version }}
+        installers-regex: '\.exe$'
+        token: ${{ secrets.WINGET_TOKEN }}
+
+  # Clean up temporary artifacts
+  cleanup:
+    needs: [sign, release]
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+    - name: Delete temporary signing package
+      uses: geekyeggo/delete-artifact@v4
+      with:
+        name: catime-signing-package
+        failOnError: false

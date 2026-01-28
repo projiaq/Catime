@@ -1,0 +1,67 @@
+/**
+ * @file resource.rc
+ * @brief Main resource file aggregating fonts, icons, and dialogs
+ */
+#include <windows.h>
+#include "resource.h"
+
+/** @brief Application icon resource */
+IDI_CATIME ICON "../asset/icon/catime.ico"
+
+/** @brief Embedded CET-4 vocabulary list */
+IDR_WORDS_CET4_TSV RCDATA "../asset/words/cet4_words.tsv"
+
+
+/** @brief MIT-licensed monospace font for terminal-style display */
+IDR_FONT_PROFONT         FONT "../asset/font/MIT/ProFontWindows Essence.ttf"
+
+/** @brief SIL-licensed developer fonts with Nerd Font icons */
+IDR_FONT_DEPARTURE         FONT "../asset/font/SIL/DepartureMono Essence.otf"
+IDR_FONT_DADDYTIME        FONT "../asset/font/SIL/DaddyTimeMono Essence.otf"
+IDR_FONT_RECMONO           FONT "../asset/font/SIL/Rec Mono Casual Essence.ttf"
+IDR_FONT_TERMINESS         FONT "../asset/font/SIL/Terminess Nerd Font Essence.ttf"
+
+/** @brief OFL-licensed decorative fonts for aesthetic diversity */
+IDR_FONT_JACQUARD          FONT "../asset/font/OFL/Jacquard 12 Essence.ttf"
+IDR_FONT_JACQUARDA         FONT "../asset/font/OFL/Jacquarda Bastarda 9 Essence.ttf"
+IDR_FONT_PIXELIFY          FONT "../asset/font/OFL/Pixelify Sans Essence.ttf"
+IDR_FONT_RUBIK_BURNED      FONT "../asset/font/OFL/Rubik Burned Essence.ttf"
+IDR_FONT_RUBIK_GLITCH      FONT "../asset/font/OFL/Rubik Glitch Essence.ttf"
+IDR_FONT_RUBIK_MARKER_HATCH FONT "../asset/font/OFL/Rubik Marker Hatch Essence.ttf"
+IDR_FONT_RUBIK_PUDDLES     FONT "../asset/font/OFL/Rubik Puddles Essence.ttf"
+IDR_FONT_WALLPOET          FONT "../asset/font/OFL/Wallpoet Essence.ttf"
+
+/** @brief Generic input dialog for user text entry */
+IDD_INPUTBOX DIALOGEX 0, 0, 240, 90
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Input"
+FONT 8, "MS Shell Dlg", 400, 0, 0x1
+BEGIN
+    LTEXT           "Please enter:", IDC_STATIC_PROMPT, 7, 7, 226, 14
+    EDITTEXT        IDC_EDIT_INPUT, 7, 24, 226, 14, ES_AUTOHSCROLL
+    DEFPUSHBUTTON   "OK", IDOK, 123, 69, 50, 14
+    PUSHBUTTON      "Cancel", IDCANCEL, 183, 69, 50, 14
+END
+
+#include "countdown_dialog.rc"
+#include "color_dialog.rc"
+#include "startup_dialog.rc"
+#include "shortcut_dialog.rc"
+#include "about_dialog.rc"
+#include "error_dialog.rc"
+#include "font_license_dialog.rc"
+#include "system_font_picker_dialog.rc"
+#include "plugin_security_dialog.rc"
+#include "pomodoro_time_dialog.rc"
+#include "pomodoro_loop_dialog.rc"
+#include "pomodoro_combo_dialog.rc"
+#include "website_dialog.rc"
+#include "notification_dialog.rc"
+#include "update_dialog.rc"
+#include "update_exit_dialog.rc"
+#include "no_update_dialog.rc"
+#include "hotkey_dialog.rc"
+#include "help_dialog.rc"
+
+/** @brief Application manifest for Windows UAC and DPI awareness */
+1 RT_MANIFEST "app.manifest"
