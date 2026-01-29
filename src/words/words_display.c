@@ -136,7 +136,7 @@ static BOOL ParseTsvToWords(const char* utf8) {
 
     int count = 0;
     wchar_t* ctx = NULL;
-    wchar_t* line = wcstok(wide, L"\n", &ctx);
+    wchar_t* line = wcstok_s(wide, L"\n", &ctx);
     while (line) {
         wchar_t* fields[4] = {0};
         int fi = 0;
@@ -165,7 +165,7 @@ static BOOL ParseTsvToWords(const char* utf8) {
                 }
             }
         }
-        line = wcstok(NULL, L"\n", &ctx);
+        line = wcstok_s(NULL, L"\n", &ctx);
     }
 
     free(wide);
